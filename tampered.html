@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CipherGuard — Tampering Detected</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div class="logo-icon">🔐</div>
+    CipherGuard
+  </a>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span class="navbar-badge">HMAC-SHA256</span>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container fade-in">
+
+    <div class="page-header">
+      <div class="page-tag">
+        <span class="dot" style="background:var(--danger); box-shadow:0 0 6px var(--danger);"></span>
+        Security Alert
+      </div>
+      <h1 style="background: linear-gradient(135deg, #fca5a5, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        Tampering Detected
+      </h1>
+      <p>{{ reason }}</p>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot red"></div>
+      <span>HMAC verification failed — {{ reason }}</span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon red">✕</div>
+        <div>
+          <div class="card-title">What happened?</div>
+          <div class="card-subtitle">HMAC-SHA256 signature mismatch</div>
+        </div>
+      </div>
+
+      <div class="alert alert-danger" style="margin-bottom:20px;">
+        <span class="alert-icon">🚨</span>
+        <div>
+          <strong>Cookie payload was modified after issuance.</strong><br>
+          The received HMAC tag does not match the recomputed tag using the server secret.
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="label">Verification step</span>
+          <span class="badge badge-red">FAILED</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Attack type detected</span>
+          <span class="value" style="color:var(--danger); font-size:12px;">Cookie Forgery / Privilege Escalation</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Server response</span>
+          <span class="badge badge-red">403 Forbidden</span>
+        </div>
+      </div>
+
+      <div class="divider">Technical explanation</div>
+
+      <div style="font-size:13px; color:var(--text-secondary); line-height:1.8;">
+        The server uses <span style="color:var(--accent-hover); font-family:var(--mono);">HMAC-SHA256</span> with a secret key 
+        that is <strong style="color:var(--text-primary);">never sent to the client</strong>. When the cookie payload 
+        is modified (e.g. changing <span style="font-family:var(--mono); color:#fcd34d;">user → admin</span>), 
+        the HMAC tag becomes invalid. The server recomputes the expected MAC and uses 
+        <span style="font-family:var(--mono); color:var(--accent-hover);">hmac.compare_digest()</span> 
+        to prevent timing attacks.
+      </div>
+    </div>
+
+    <a href="/login" class="btn btn-primary" style="margin-top:20px; display:flex;">
+      ← Return to Login
+    </a>
+
+    <div class="footer">
+      This is the expected behavior — the system is working correctly.
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

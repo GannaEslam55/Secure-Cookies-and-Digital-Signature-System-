@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CipherGuard — File Signing</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div class="logo-icon">🔐</div>
+    CipherGuard
+  </a>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span class="navbar-badge">RSA-SHA256</span>
+    <div class="navbar-links">
+      <a href="/login">Cookie Demo</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container-wide fade-in">
+
+    <div class="page-header">
+      <div class="page-tag">
+        <span class="dot"></span>
+        Part B — Digital Signatures
+      </div>
+      <h1>File Signing & Verification</h1>
+      <p>RSA-2048 key pair generation, signing, and integrity verification</p>
+    </div>
+
+    {% if message %}
+    <div class="alert alert-{{ msg_type }}" style="max-width:860px; margin: 0 auto 24px;">
+      <span class="alert-icon">
+        {% if msg_type == 'success' %}✓{% elif msg_type == 'danger' %}✕{% else %}ℹ{% endif %}
+      </span>
+      <div>{{ message }}</div>
+    </div>
+    {% endif %}
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn {% if active_tab == 'keygen' or not active_tab %}active{% endif %}" onclick="switchTab('keygen')">🔑 Key Generation</button>
+      <button class="tab-btn {% if active_tab == 'sign' %}active{% endif %}" onclick="switchTab('sign')">✍ Sign File</button>
+      <button class="tab-btn {% if active_tab == 'verify' %}active{% endif %}" onclick="switchTab('verify')">✓ Verify</button>
+      <button class="tab-btn {% if active_tab == 'bonus' %}active{% endif %}" onclick="switchTab('bonus')">⚡ Bonus Attacks</button>
+    </div>
+
+    <!-- TAB: KEY GENERATION -->
+    <div id="tab-keygen" class="tab-panel {% if active_tab == 'keygen' or not active_tab %}active{% endif %}">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon blue">🔑</div>
+            <div>
+              <div class="card-title">Generate RSA Key Pair</div>
+              <div class="card-subtitle">2048-bit RSA with PKCS#1 v1.5</div>
+            </div>
+          </div>
+          <p style="font-size:14px; color:var(--text-secondary); margin-bottom:20px;">
+            Generates a fresh RSA-2048 private/public key pair stored server-side. 
+            The private key signs files; the public key verifies signatures.
+          </p>
+          <form method="POST" action="/generate-keys">
+            <button type="submit" class="btn btn-primary">⚙️ &nbsp;Generate New Key Pair</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon green">📋</div>
+            <div>
+              <div class="card-title">Current Key Status</div>
+              <div class="card-subtitle">Public key fingerprint</div>
+            </div>
+          </div>
+          {% if public_key_pem %}
+          <div class="status-bar">
+            <div class="status-dot green"></div>
+            <span>Key pair loaded and ready</span>
+          </div>
+          <div class="code-label">Public Key (PEM)</div>
+          <div class="code-block" style="max-height:160px; overflow-y:auto;">{{ public_key_pem }}</div>
+          {% else %}
+          <div class="status-bar">
+            <div class="status-dot yellow"></div>
+            <span>No key pair generated yet</span>
+          </div>
+          <div class="alert alert-warning" style="margin-bottom:0;">
+            <span class="alert-icon">⚠</span>
+            <div>Generate a key pair first before signing files.</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: SIGN -->
+    <div id="tab-sign" class="tab-panel {% if active_tab == 'sign' %}active{% endif %}">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon blue">✍</div>
+            <div>
+              <div class="card-title">Sign a File</div>
+              <div class="card-subtitle">Creates RSA-SHA256 digital signature</div>
+            </div>
+          </div>
+          <form method="POST" action="/sign-file" enctype="multipart/form-data">
+            <div class="form-group">
+              <label>Upload File</label>
+              <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📄</div>
+                <p>Click to select a file</p>
+                <span>Any file type supported</span>
+                <input type="file" name="file" id="fileInput" style="display:none;" required onchange="document.getElementById('fileName').textContent = this.files[0].name">
+              </div>
+              <div id="fileName" style="margin-top:8px; font-size:13px; color:var(--accent-hover); font-family:var(--mono);"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">🖊 &nbsp;Sign with Private Key</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon green">📦</div>
+            <div>
+              <div class="card-title">Signed Files</div>
+              <div class="card-subtitle">Available for verification</div>
+            </div>
+          </div>
+          {% if signed_files %}
+            <div class="info-grid">
+            {% for f in signed_files %}
+              <div class="info-row">
+                <span class="label" style="font-family:var(--mono);">{{ f }}</span>
+                <span class="badge badge-green">signed</span>
+              </div>
+            {% endfor %}
+            </div>
+          {% else %}
+            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:14px;">
+              No files signed yet
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if signature_hex %}
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-icon green">✓</div>
+          <div>
+            <div class="card-title">Signature Generated</div>
+            <div class="card-subtitle">RSA-SHA256 over file hash</div>
+          </div>
+        </div>
+        <div class="code-label">Signature (hex)</div>
+        <div class="code-block">{{ signature_hex }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- TAB: VERIFY -->
+    <div id="tab-verify" class="tab-panel {% if active_tab == 'verify' %}active{% endif %}">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+        <!-- Verify original -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon green">✓</div>
+            <div>
+              <div class="card-title">Verify Original File</div>
+              <div class="card-subtitle">Should pass — file is untampered</div>
+            </div>
+          </div>
+          <form method="POST" action="/verify-file" enctype="multipart/form-data">
+            <input type="hidden" name="mode" value="normal">
+            <div class="form-group">
+              <label>Select Signed File to Verify</label>
+              <select name="filename">
+                {% for f in signed_files %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Upload File Content</label>
+              <input type="file" name="verify_file" required>
+            </div>
+            <button type="submit" class="btn btn-primary">🔍 &nbsp;Verify Signature</button>
+          </form>
+        </div>
+
+        <!-- Verify tampered -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon red">⚡</div>
+            <div>
+              <div class="card-title">Verify Tampered File</div>
+              <div class="card-subtitle">Should fail — detects modification</div>
+            </div>
+          </div>
+          <form method="POST" action="/verify-file" enctype="multipart/form-data">
+            <input type="hidden" name="mode" value="tampered">
+            <div class="form-group">
+              <label>Original Signed File</label>
+              <select name="filename">
+                {% for f in signed_files %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Upload Modified File</label>
+              <input type="file" name="verify_file" required>
+            </div>
+            <button type="submit" class="btn btn-danger">⚠ &nbsp;Test Tampered File</button>
+          </form>
+        </div>
+      </div>
+
+      {% if verify_result %}
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-icon {% if verify_result.success %}green{% else %}red{% endif %}">
+            {% if verify_result.success %}✓{% else %}✕{% endif %}
+          </div>
+          <div>
+            <div class="card-title">Verification Result</div>
+            <div class="card-subtitle">{{ verify_result.filename }}</div>
+          </div>
+        </div>
+        <div class="alert alert-{% if verify_result.success %}success{% else %}danger{% endif %}" style="margin-bottom:0;">
+          <span class="alert-icon">{% if verify_result.success %}✓{% else %}✕{% endif %}</span>
+          <div>{{ verify_result.message }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- TAB: BONUS ATTACKS -->
+    <div id="tab-bonus" class="tab-panel {% if active_tab == 'bonus' %}active{% endif %}">
+      <div class="alert alert-warning">
+        <span class="alert-icon">⚡</span>
+        <div>
+          <strong>Bonus (+3 marks) — Attacks from Wong (Page 150)</strong><br>
+          Demonstrates key substitution and message/key substitution attacks.
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+        <!-- Attack 1: Key Substitution -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon yellow">⚔</div>
+            <div>
+              <div class="card-title">Key Substitution Attack</div>
+              <div class="card-subtitle">Attacker forges a valid (m, sig) pair</div>
+            </div>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.7;">
+            The attacker picks an <strong style="color:var(--text-primary);">arbitrary signature s'</strong>, 
+            computes <code style="font-family:var(--mono); color:#93c5fd;">m' = VERIFY(pk, s')</code> 
+            with a <strong style="color:var(--text-primary);">newly generated key pair</strong>, 
+            then presents <code style="font-family:var(--mono); color:#93c5fd;">(pk', m', s')</code> — 
+            verification passes because the relationship holds.
+          </p>
+          <form method="POST" action="/attack/key-substitution">
+            <div class="form-group">
+              <label>Message to "sign" via attack</label>
+              <input type="text" name="message" placeholder="e.g. Transfer $1000 to Eve" required>
+            </div>
+            <button type="submit" class="btn btn-secondary" style="border-color:var(--warning-border); color:var(--warning);">
+              ⚔ &nbsp;Execute Attack
+            </button>
+          </form>
+        </div>
+
+        <!-- Attack 2: Message Key Substitution -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon red">💀</div>
+            <div>
+              <div class="card-title">Message/Key Substitution Attack</div>
+              <div class="card-subtitle">Forge (m', s) that passes verification</div>
+            </div>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.7;">
+            Given a valid <code style="font-family:var(--mono); color:#93c5fd;">(m, s)</code>, 
+            the attacker creates a new key pair <code style="font-family:var(--mono); color:#93c5fd;">pk'</code> 
+            such that <code style="font-family:var(--mono); color:#93c5fd;">VERIFY(pk', m', s) = True</code> 
+            for a <strong style="color:var(--text-primary);">different message m'</strong> 
+            — reusing the same signature with a crafted key.
+          </p>
+          <form method="POST" action="/attack/msg-key-substitution">
+            <div class="form-group">
+              <label>Select signed file for attack</label>
+              <select name="filename">
+                {% for f in signed_files %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-secondary" style="border-color:var(--danger-border); color:var(--danger);">
+              💀 &nbsp;Execute Attack
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {% if attack_result %}
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-icon yellow">📋</div>
+          <div>
+            <div class="card-title">Attack Result — {{ attack_result.attack_name }}</div>
+            <div class="card-subtitle">Educational demonstration only</div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning" style="margin-bottom:20px;">
+          <span class="alert-icon">⚡</span>
+          <div>{{ attack_result.explanation }}</div>
+        </div>
+
+        {% for key, val in attack_result.details.items() %}
+        <div class="code-label">{{ key }}</div>
+        <div class="code-block">{{ val }}</div>
+        {% endfor %}
+
+        <div class="info-row" style="margin-top:16px;">
+          <span class="label">Verification incorrectly passes?</span>
+          <span class="badge badge-{% if attack_result.success %}red{% else %}green{% endif %}">
+            {% if attack_result.success %}YES — Vulnerable{% else %}Mitigated{% endif %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

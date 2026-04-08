@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CipherGuard — Secure Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div class="logo-icon">🔐</div>
+    CipherGuard
+  </a>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span class="navbar-badge">HMAC-SHA256</span>
+    <div class="navbar-links">
+      <a href="/sign">File Signing</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container fade-in">
+
+    <div class="page-header">
+      <div class="page-tag">
+        <span class="dot"></span>
+        Part A — Cookie Protection
+      </div>
+      <h1>Secure Authentication</h1>
+      <p>Login generates an HMAC-protected session cookie</p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+      <span class="alert-icon">⚠</span>
+      <div>{{ error }}</div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">👤</div>
+        <div>
+          <div class="card-title">Sign In</div>
+          <div class="card-subtitle">Demo credentials: any username works</div>
+        </div>
+      </div>
+
+      <form method="POST">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" name="username" placeholder="e.g. alice" required>
+        </div>
+
+        <div class="form-group">
+          <label>Role</label>
+          <select name="role">
+            <option value="user">User — Standard Access</option>
+            <option value="admin">Admin — Elevated Privileges</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          🔑 &nbsp;Authenticate Securely
+        </button>
+      </form>
+
+      <div class="divider">How it works</div>
+
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="label">Cookie payload</span>
+          <span class="badge badge-blue">username | role | expiry</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Signing algorithm</span>
+          <span class="badge badge-blue">HMAC-SHA256</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Token validity</span>
+          <span class="badge badge-yellow">5 minutes</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="/sign">→ Go to File Signing (Part B)</a>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

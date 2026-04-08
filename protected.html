@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CipherGuard — Protected Resource</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <div class="logo-icon">🔐</div>
+    CipherGuard
+  </a>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span class="navbar-badge">HMAC-SHA256</span>
+    <div class="navbar-links">
+      <a href="/login">Logout</a>
+      <a href="/sign">File Signing</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="container fade-in">
+
+    <div class="page-header">
+      <div class="page-tag">
+        <span class="dot"></span>
+        Access Granted
+      </div>
+      <h1>Protected Resource</h1>
+      <p>Cookie verified via HMAC — session is authentic</p>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot green"></div>
+      <span>Cookie integrity verified — HMAC signature matches</span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">✓</div>
+        <div>
+          <div class="card-title">Session Details</div>
+          <div class="card-subtitle">Decoded from authenticated cookie payload</div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="label">Username</span>
+          <span class="value">{{ username }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Role</span>
+          <span class="badge {% if role == 'admin' %}badge-yellow{% else %}badge-blue{% endif %}">
+            {% if role == 'admin' %}⚡ admin{% else %}👤 user{% endif %}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="label">Session expires</span>
+          <span class="value">{{ expiry_fmt }}</span>
+        </div>
+      </div>
+
+      {% if role == 'admin' %}
+      <div class="alert alert-warning" style="margin-top:20px; margin-bottom:0;">
+        <span class="alert-icon">⚡</span>
+        <div>Admin privileges active — elevated access granted</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header">
+        <div class="card-icon blue">🍪</div>
+        <div>
+          <div class="card-title">Raw Cookie Data</div>
+          <div class="card-subtitle">Inspect these in DevTools → Application → Cookies</div>
+        </div>
+      </div>
+
+      <div class="code-label">cookie (payload)</div>
+      <div class="code-block">{{ raw_cookie }}</div>
+
+      <div class="code-label">mac (HMAC-SHA256 tag)</div>
+      <div class="code-block">{{ raw_mac }}</div>
+
+      <div class="alert alert-info" style="margin-top:16px; margin-bottom:0;">
+        <span class="alert-icon">💡</span>
+        <div>Try modifying the <strong>cookie</strong> value in DevTools (e.g. change <code>user</code> to <code>admin</code>) and refresh — tampering will be detected instantly.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="/login">← Back to Login</a> &nbsp;·&nbsp;
+      <a href="/sign">File Signing →</a>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
