@@ -16,7 +16,7 @@ def login():
 
     # مثال للتجربة: user/password
     if username == 'user' and password == 'password':
-        role = 'admin'
+        role = 'user'  # تم تعديلها من admin → user
         expires = int(time.time()) + 60*5  # 5 دقائق
 
         # إنشاء الـ cookie payload
@@ -27,8 +27,8 @@ def login():
 
         # إعداد response
         resp = make_response(f"Logged in! Cookie set for {username}")
-        resp.set_cookie('auth_cookie', cookie_payload)
-        resp.set_cookie('auth_mac', mac)
+        resp.set_cookie('auth_cookie', cookie_payload, httponly=True)
+        resp.set_cookie('auth_mac', mac, httponly=True)
         return resp
     else:
         return "Invalid credentials!", 401
@@ -48,11 +48,21 @@ def protected():
     if not hmac.compare_digest(expected_mac, cookie_mac):
         return "Tampering detected! Access denied!", 403
 
-    return f"Access granted! Cookie payload: {cookie_payload}"
+    # التأكد من شكل الكوكي + expiration
+    try:
+        username, role, expires = cookie_payload.split('|')
+    except:
+        return "Invalid cookie format!", 403
+
+    if int(expires) < int(time.time()):
+        return "Session expired!", 403
+
+    return f"Access granted! Welcome {username}, role: {role}"
 
 @app.route('/')
 def home():
     return "Server is running 🚀"
+
 @app.route('/login_form')
 def login_form():
     return '''
@@ -62,5 +72,6 @@ def login_form():
         <input type="submit" value="Login">
     </form>
     '''
+
 if __name__ == '__main__':
     app.run(debug=True)
